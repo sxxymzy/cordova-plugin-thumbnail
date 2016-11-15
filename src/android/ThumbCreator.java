@@ -48,38 +48,43 @@ public class ThumbCreator extends CordovaPlugin {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         File file = new File(originImage);
+        Log.d("thumbnail origin", originImage);
 
         Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
         Bitmap thumb = ThumbnailUtils.extractThumbnail(bitmap, ThumbCreator.width, ThumbCreator.height);
 
         OutputStream fOut = null;
         File folder = new File(thumbDir);
+        Log.d("thumbnail thumbDir", thumbDir);
         if (!folder.exists()) {
+            Log.d("thumb folder not exist", "");
             folder.mkdir();
         }
         File targetFile = new File(thumbDir + "_thumb_" + file.getName());
+        Log.d("targetFile ", thumbDir + "_thumb_" + file.getName());
+        Log.d("file exist: ", String.valueOf(targetFile.exists()));
         if (!targetFile.exists()) {
+            Log.d("create new file", thumbDir + "_thumb_" + file.getName());
             targetFile.createNewFile();
+            Log.d("create done", "thumb");
         }
-        fOut = new FileOutputStream(targetFile);
-        thumb.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-        fOut.flush();
-        fOut.close();
-        return targetFile.getAbsolutePath();
+        if (targetFile.exists()) {
+            Log.d("file exist: ", String.valueOf(targetFile.exists()));
+            fOut = new FileOutputStream(targetFile);
+            thumb.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+            return targetFile.getAbsolutePath();
+        }
+        return null;
     }
 
     private boolean createThumb(String originImage, String thumbDir, int scaleWidth, int scaleHeight, double quality, CallbackContext callback) throws JSONException {
         try {
-            if (originImage.startsWith("file://")) {
-                originImage = originImage.substring(6);
-            }
-            if (thumbDir.startsWith("file://")) {
-                thumbDir = thumbDir.substring(6);
-            }
-            System.out.println(originImage);
-            System.out.println(thumbDir);
+            Log.d("log", originImage);
+            Log.d("log", thumbDir);
             String absolutePath = this.thumbnail(originImage, thumbDir, scaleWidth, scaleHeight, quality);
-            System.out.println(absolutePath);
+            Log.d("log", absolutePath);
             callback.success(absolutePath);
             return true;
         } catch (Exception e) {
@@ -95,10 +100,15 @@ public class ThumbCreator extends CordovaPlugin {
                     JSONArray arr = new JSONArray();
                     for (int i = 0; i < origins.length(); i++) {
                         String origin = origins.getString(i);
+                        if (origin.startsWith("file://")) {
+                            origin = origin.substring(6);
+                        }
+                        Log.d("thumbnailing", origin);
                         arr.put(ThumbCreator.this.thumbnail(origin, thumbDir, scaleWidth, scaleHeight, quality));
                     }
                     callback.success(arr);
                 } catch (Exception e) {
+                    Log.e("thumbnail error", e.toString());
                     callback.error("An errror occured: " + e.toString());
                 }
             }
@@ -112,11 +122,17 @@ public class ThumbCreator extends CordovaPlugin {
         int scaleWidth = args.getInt(2);
         int scaleHeight = args.getInt(3);
         double quality = Double.parseDouble(args.getString(4));
+        Log.d("thumblog", thumbDir);
+        if (thumbDir.startsWith("file://")) {
+            thumbDir = thumbDir.substring(6);
+        }
         if (action.equals("createThumb")) {
             String originImage = args.getString(0);
+            Log.d("thumblog", originImage);
             return this.createThumb(originImage, thumbDir, scaleWidth, scaleHeight, quality, callback);
-        } else if (action.equals("loadThumb")) {
+        } else if (action.equals("loadThumbs")) {
             JSONArray origins = (JSONArray) args.get(0);
+            Log.d("thumblog", origins.toString());
             return this.loadThumbs(origins, thumbDir, scaleWidth, scaleHeight, quality, callback);
         }
         return false;
