@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "name": "cordova-plugin-thumbnail",
+  "cordova_name": "Thumbnail Plugin",
+  "description": "Thumbnail Plugin",
+  "license": "Apache 2.0",
+  "repo": "",
+  "issue": "",
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "device"
+  ],
+  "platforms": [
+    "android"
+  ],
+  "engines": [],
+  "englishdoc": "",
+  "repository" : { 
+    "type" : "git",
+     "url" : "https://github.com/sxxymzy/cordova-plugin-thumbnail.git"
+  }
+}
