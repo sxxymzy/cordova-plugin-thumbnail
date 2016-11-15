@@ -19,7 +19,6 @@ import android.os.Environment;
 
 import java.io.*;
 
-import com.google.gson.Gson;
 
 public class ThumbCreator extends CordovaPlugin {
 
@@ -44,21 +43,21 @@ public class ThumbCreator extends CordovaPlugin {
         super.initialize(cordova, webView);
     }
 
-    private String thumbnail(String originImage, String toPath, int scaleWidth, int scaleHeight, float quality) {
+    private String thumbnail(String originImage, String thumbDir, int scaleWidth, int scaleHeight, float quality) {
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        File file = new File(fromPath);
+        File file = new File(originImage);
 
         Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
         Bitmap thumb = ThumbnailUtils.extractThumbnail(bitmap, ThumbCreator.width, ThumbCreator.height);
 
         OutputStream fOut = null;
-        File folder = new File(toPath);
+        File folder = new File(thumbDir);
         if (!folder.exists()) {
             folder.mkdir();
         }
-        File targetFile = new File(toPath + "_thumb_" + file.getName());
+        File targetFile = new File(thumbDir + "_thumb_" + file.getName());
         if (!targetFile.exists()) {
             targetFile.createNewFile();
         }
@@ -69,19 +68,19 @@ public class ThumbCreator extends CordovaPlugin {
         return targetFile.getAbsolutePath();
     }
 
-    private boolean createThumb(String fromPath, String toPath, int scaleWidth, int scaleHeight, float quality, CallbackContext callback) throws JSONException {
+    private boolean createThumb(String originImage, String thumbDir, int scaleWidth, int scaleHeight, float quality, CallbackContext callback) throws JSONException {
 
-        if (fromPath.startsWith("file://")) {
-            fromPath = fromPath.substring(6);
+        if (originImage.startsWith("file://")) {
+            originImage = originImage.substring(6);
         }
-        if (toPath.startsWith("file://")) {
-            toPath = toPath.substring(6);
+        if (thumbDir.startsWith("file://")) {
+            thumbDir = thumbDir.substring(6);
         }
-        System.out.println(fromPath);
-        System.out.println(toPath);
+        System.out.println(originImage);
+        System.out.println(thumbDir);
 
         try {
-            String absolutePath = this.thumbnail(fromPath, toPath, scaleWidth, scaleHeight, quality);
+            String absolutePath = this.thumbnail(originImage, thumbDir, scaleWidth, scaleHeight, quality);
             System.out.println(absolutePath);
             callback.success(absolutePath);
         } catch (Exception e) {
@@ -92,7 +91,7 @@ public class ThumbCreator extends CordovaPlugin {
         return true;
     }
 
-    private boolean loadThumbs(JSONArray origins, String thumbDir, String thumbDir, int scaleWidth, int scaleHeight, float quality, CallbackContext callback) throws JSONException {
+    private boolean loadThumbs(JSONArray origins, String thumbDir, int scaleWidth, int scaleHeight, float quality, CallbackContext callback) throws JSONException {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
@@ -106,25 +105,20 @@ public class ThumbCreator extends CordovaPlugin {
                     callback.error("An errror occured: " + e.toString());
                 }
             }
-        })
+        });
         return true;
     }
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callback) throws JSONException {
+        String originImage = args.getString(0);
+        String thumbDir = args.getString(1);
+        int scaleWidth = args.getInt(2);
+        int scaleHeight = args.getInt(3);
+        float quality = args.getFloat(4);
         if (action.equals("createThumb")) {
-            String fromPath = args.getString(0);
-            String toPath = args.getString(1);
-            int scaleWidth = args.getInt(2);
-            int scaleHeight = args.getInt(3);
-            float quality = args.getFloat(4);
-            return this.createThumb(fromPath, toPath, scaleWidth, scaleHeight, quality, callback);
+            return this.createThumb(originImage, thumbDir, scaleWidth, scaleHeight, quality, callback);
         } else if (action.equals("loadThumb")) {
-            JSONArray origins = args.getJSONArray(0);
-            String thumbDir = args.getString(1);
-            int scaleWidth = args.getInt(2);
-            int scaleHeight = args.getInt(3);
-            float quality = args.getFloat(4);
             return this.loadThumbs(origins, thumbDir, scaleWidth, scaleHeight, quality, callback);
         }
         return false;

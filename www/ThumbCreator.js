@@ -4,8 +4,7 @@ function ThumbCreator() {
     console.log("ThumbCreator.js: is created.");
 }
 
-ThumbCreator.prototype.createThumb = function(fromPath, toPath, successCallback, errorCallback) {   
-    var args = [fromPath, toPath];
+ThumbCreator.prototype.createThumb = function(origins, thumbDir,scaleWidth, scaleHeight,quality, successCallback, errorCallback) {
     exec(function(result){
         console.log("sucess from native", result);
             successCallback(result);
@@ -15,7 +14,7 @@ ThumbCreator.prototype.createThumb = function(fromPath, toPath, successCallback,
         },
         "ThumbCreator",
         "createThumb",
-        args
+        [origins, thumbDir, scaleWidth, scaleHeight, quality]
     );
 }
 ThumbCreator.prototype.loadThumbs = function(origins, thumbDir, successCallback, errorCallback){
@@ -26,7 +25,7 @@ ThumbCreator.prototype.loadThumbs = function(origins, thumbDir, successCallback,
     },
     "ThumbCreator",
     "loadThumbs",
-    [origins, thumbDir])
+    [origins, thumbDir, scaleWidth, scaleHeight, quality]);
 }
 
 var thumb = new ThumbCreator();
