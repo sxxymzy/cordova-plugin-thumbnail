@@ -23,8 +23,6 @@ import java.io.*;
 public class ThumbCreator extends CordovaPlugin {
 
     public static final String TAG = "ThumbCreator";
-    public static int width = 100;
-    public static int height = 100;
 
     /**
      * Constructor.
@@ -43,15 +41,15 @@ public class ThumbCreator extends CordovaPlugin {
         super.initialize(cordova, webView);
     }
 
-    private String thumbnail(String originImage, String thumbDir, int scaleWidth, int scaleHeight, double quality) throws IOException, FileNotFoundException {
+    private static String thumbnail(String originImage, String thumbDir, int scaleWidth, int scaleHeight, int quality) throws IOException, FileNotFoundException {
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        File file = new File(originImage);
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        Bitmap bitmap = BitmapFactory.decodeFile(originImage, options);
         Log.d("thumbnail origin", originImage);
 
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-        Bitmap thumb = ThumbnailUtils.extractThumbnail(bitmap, ThumbCreator.width, ThumbCreator.height);
+        File file = new File(originImage);
+        Bitmap thumbBmp = ThumbnailUtils.extractThumbnail(bitmap, scaleWidth, scaleHeight);
 
         OutputStream fOut = null;
         File folder = new File(thumbDir);
@@ -67,33 +65,20 @@ public class ThumbCreator extends CordovaPlugin {
             Log.d("create new file", thumbDir + "_thumb_" + file.getName());
             targetFile.createNewFile();
             Log.d("create done", "thumb");
+            fOut = new FileOutputStream(targetFile);
+            thumbBmp.compress(Bitmap.CompressFormat.JPEG, quality, fOut);
+            fOut.flush();
+            fOut.close();
+            return "file://" + targetFile.getAbsolutePath();
         }
         if (targetFile.exists()) {
             Log.d("file exist: ", String.valueOf(targetFile.exists()));
-            fOut = new FileOutputStream(targetFile);
-            thumb.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-            fOut.flush();
-            fOut.close();
-            return targetFile.getAbsolutePath();
+            return "file://" + targetFile.getAbsolutePath();
         }
         return null;
     }
 
-    private boolean createThumb(String originImage, String thumbDir, int scaleWidth, int scaleHeight, double quality, CallbackContext callback) throws JSONException {
-        try {
-            Log.d("log", originImage);
-            Log.d("log", thumbDir);
-            String absolutePath = this.thumbnail(originImage, thumbDir, scaleWidth, scaleHeight, quality);
-            Log.d("log", absolutePath);
-            callback.success(absolutePath);
-            return true;
-        } catch (Exception e) {
-            callback.error("An errror occured: " + e.toString());
-            return false;
-        }
-    }
-
-    private boolean loadThumbs(final JSONArray origins, final String thumbDir, final int scaleWidth, final int scaleHeight, final double quality, final CallbackContext callback) throws JSONException {
+    private boolean loadThumbs(final JSONArray origins, final String thumbDir, final int scaleWidth, final int scaleHeight, final int quality, final CallbackContext callback) throws JSONException {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
@@ -104,8 +89,9 @@ public class ThumbCreator extends CordovaPlugin {
                             origin = origin.substring(6);
                         }
                         Log.d("thumbnailing", origin);
-                        arr.put(ThumbCreator.this.thumbnail(origin, thumbDir, scaleWidth, scaleHeight, quality));
+                        arr.put(ThumbCreator.thumbnail(origin, thumbDir, scaleWidth, scaleHeight, quality));
                     }
+                    Log.i("loadThumb done", arr.toString());
                     callback.success(arr);
                 } catch (Exception e) {
                     Log.e("thumbnail error", e.toString());
@@ -121,16 +107,12 @@ public class ThumbCreator extends CordovaPlugin {
         String thumbDir = args.getString(1);
         int scaleWidth = args.getInt(2);
         int scaleHeight = args.getInt(3);
-        double quality = Double.parseDouble(args.getString(4));
-        Log.d("thumblog", thumbDir);
+        int quality = args.getInt(4);
         if (thumbDir.startsWith("file://")) {
             thumbDir = thumbDir.substring(6);
         }
-        if (action.equals("createThumb")) {
-            String originImage = args.getString(0);
-            Log.d("thumblog", originImage);
-            return this.createThumb(originImage, thumbDir, scaleWidth, scaleHeight, quality, callback);
-        } else if (action.equals("loadThumbs")) {
+        Log.d("thumblog", thumbDir);
+        if (action.equals("loadThumbs")) {
             JSONArray origins = (JSONArray) args.get(0);
             Log.d("thumblog", origins.toString());
             return this.loadThumbs(origins, thumbDir, scaleWidth, scaleHeight, quality, callback);
