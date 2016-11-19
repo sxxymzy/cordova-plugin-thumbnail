@@ -6,6 +6,12 @@ The `loadThumbs` function will create a background thread to load thumbs from a 
 
 After saves all thumbs to the folder specified in `thumbDir`, successCallback will be called.
 
+# Dependencies
+
+  cordova plugin add cordova-plugin-android-permissions
+  cordova plugin add cordova-plugin-media-retrieve
+  cordova plugin add cordova-plugin-file
+
 # Example
 
     var scaleWidth = 100;
